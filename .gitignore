@@ -1,0 +1,5 @@
+build
+chip8
+compile_commands.json
+.cache/clangd/index
+main
