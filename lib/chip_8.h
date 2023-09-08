@@ -9,6 +9,8 @@ typedef struct{
     uint8_t registers[N_REG];
     uint8_t sp;
     uint16_t pc;
+    uint8_t* Vf;
+    uint16_t I;
 } chip_8_t;
 
 
@@ -69,7 +71,7 @@ void OpcodeANNN(chip_8_t*, instruction_t*);
 
 void OpcodeBNNN(chip_8_t*, instruction_t*);
 
-void OpcodeCXKK(chip_8_t*, instruction_t*);
+void OpcodeCXNN(chip_8_t*, instruction_t*);
 
 void OpcodeDXYN(chip_8_t*, instruction_t*);
 
