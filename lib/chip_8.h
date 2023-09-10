@@ -1,6 +1,8 @@
+#ifndef __CHIP8_H__
+#define __CHIP8_H__
 #include <stdint.h>
 #include "definitions.h"
-
+#include "display.h"
 
 
 typedef struct{
@@ -11,6 +13,9 @@ typedef struct{
     uint16_t pc;
     uint8_t* Vf;
     uint16_t I;
+    uint8_t delay_timer;
+    uint8_t sound_timer;
+    display_t display;
 } chip_8_t;
 
 
@@ -22,6 +27,9 @@ typedef struct{
     uint8_t n3;
 } instruction_t;
 
+
+
+void destroy_chip8(chip_8_t* chip);
 
 typedef void(*op)(chip_8_t*, instruction_t*);
 
@@ -100,3 +108,5 @@ void OpcodeFX55(chip_8_t*, instruction_t*);
 void OpcodeFX65(chip_8_t*, instruction_t*);
 
 void Opcode0000(chip_8_t*, instruction_t*);
+
+#endif // !__CHIP8_H__

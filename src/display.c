@@ -1,5 +1,6 @@
 #include "display.h"
-
+#include "display_buffer.h"
+#include <stdint.h>
 static const color_t white = {0, 0, 0, 255};
 
 static const color_t black = {255, 255, 255, 0};
@@ -15,6 +16,7 @@ display_t init_display(uint8_t* buffer, size_t buffer_len, uint8_t* open){
     display.background = black;
     display.color = white;
     memset(display.keypad, 0 , CHIP8_KEY_COUNT);
+    memset(buffer, 0, buffer_len);
     SDL_Window *window;
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL initialization failed: %s\n", SDL_GetError());
@@ -49,10 +51,13 @@ display_t init_display(uint8_t* buffer, size_t buffer_len, uint8_t* open){
     return display;
 }
 
-uint8_t get_nth_bit(uint8_t* array, uint16_t n){
-    uint16_t byte = n / 8;
-    uint8_t index = n % 8;
-    return (array[byte] & (1 << index)) != 0;
+
+uint8_t get_key(display_t* display, uint8_t key){
+    return display->keypad & ((1 << (15 - key)) - 1);
+}
+
+void set_key(display_t* display, uint8_t key, uint8_t n){
+    set_nth_bit((uint8_t*)display->buffer, key, n);
 }
 
 void render(display_t* display){
@@ -94,7 +99,7 @@ void event_handler(display_t* display){
             SDL_Keycode key = event.key.keysym.sym;
             for (int i = 0; i < CHIP8_KEY_COUNT; i++) {
                 if (key == chip8Keymap[i]) {
-                    display->keypad[i] = (event.type == SDL_KEYDOWN);
+                    set_key(display, i, event.type == SDL_KEYDOWN);
                     break;
                 }
             }

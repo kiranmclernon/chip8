@@ -1,8 +1,14 @@
 #include "chip_8.h"
+#include "definitions.h"
+#include "display_buffer.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
+
+
+
 instruction_t fetch(chip_8_t* chip_8){
     instruction_t inst;
     inst.instruction = ((uint16_t)chip_8->memory[chip_8->pc] << 8) |
@@ -14,6 +20,10 @@ instruction_t fetch(chip_8_t* chip_8){
     inst.n3 = inst.instruction & mask;
     chip_8->pc += 2;
     return inst;
+}
+
+void destroy_chip8(chip_8_t* chip8){
+    destroy_display(&chip8->display);
 }
 
 op decode_instruction(instruction_t inst){
@@ -135,6 +145,11 @@ op decode_instruction(instruction_t inst){
     return Opcode0000;
 }
 
+void Opcode0NNN(chip_8_t* chip, instruction_t* inst){}
+
+void Opcode00EE(chip_8_t* chip, instruction_t* inst){
+    memset(chip->display.buffer, 0, BUFFER_LEN);
+}
 
 void Opcode1NNN(chip_8_t* chip, instruction_t* inst){ 
     uint16_t mem_addr = inst->instruction & ((1 << 11) - 1);
@@ -241,7 +256,6 @@ void Opcode8XYE(chip_8_t* chip, instruction_t* inst){
     *Vx <<= 1;
 }
 
-
 void Opcode9XY0(chip_8_t* chip, instruction_t* inst){
     uint8_t* Vx = &(chip->registers[inst->n1]);
     uint8_t* Vy = &(chip->registers[inst->n2]);
@@ -249,7 +263,6 @@ void Opcode9XY0(chip_8_t* chip, instruction_t* inst){
         chip->pc += 2;
     }
 }
-
 
 void OpcodeANNN(chip_8_t* chip, instruction_t* inst){
     uint16_t val = inst->instruction & ((1 << 11) - 1);
@@ -268,4 +281,73 @@ void OpcodeCXNN(chip_8_t* chip, instruction_t* inst){
     static const uint8_t  lower = 0;
     uint8_t num = (rand() % (upper - lower + 1)) + lower;
     chip->registers[inst->n1] = val & num;
+}
+
+void OpcodeDXYN(chip_8_t* chip, instruction_t* inst){
+    uint16_t sprite_addr = chip->I;
+    uint8_t sprite;
+    uint8_t x = inst->n1;
+    uint8_t y_start = inst->n2;
+    *chip->Vf = 0;
+    for(uint8_t row = 0; row < inst->n3; row++){
+        sprite = chip->memory[sprite_addr + row];
+        *chip->Vf |= set_nth_byte_with_flip(chip->display.buffer,
+                        y_start + row * CHIP8_WIDTH + x, sprite);
+    }
+}
+
+void OpcodeEX9E(chip_8_t* chip, instruction_t* inst){
+    if(get_key(&chip->display, inst->n1)){
+        chip->pc += 2;
+    }
+}
+
+void OpcodeEXA1(chip_8_t* chip, instruction_t* inst){
+    if(!get_key(&chip->display, inst->n1)){
+        chip->pc += 2;
+    }
+}
+
+void OpcodeFX07(chip_8_t* chip, instruction_t* inst){
+    chip->registers[inst->n1] = chip->delay_timer;
+}
+
+void OpcodeFX0A(chip_8_t* chip, instruction_t* inst){
+    if(!chip->display.keypad){
+        chip->pc -= 2;
+    } else {
+        chip->registers[inst->n1] = ffs(chip->display.keypad) - 1;
+    }
+}
+
+void OpcodeFX15(chip_8_t* chip, instruction_t* inst){
+    chip->delay_timer = chip->registers[inst->n1];
+}
+
+void OpcodeFX18(chip_8_t* chip, instruction_t* inst){
+    chip->sound_timer = chip->registers[inst->n1];
+}
+
+void OpcodeFX1E(chip_8_t* chip, instruction_t* inst){
+    chip->I += chip->registers[inst->n1];
+}
+
+void OpcodeFX29(chip_8_t* chip, instruction_t* inst){
+    chip->I = chip->memory[FONT_START + 5 * chip->memory[inst->n1]];
+}
+
+void OpcodeFX33(chip_8_t* chip, instruction_t* inst){
+    uint8_t vx = chip->memory[inst->n1];
+    chip->memory[chip->I] = (vx % 1000) / 100;
+    chip->memory[chip->I + 1] = (vx % 100) / 10;
+    chip->memory[chip->I + 2] = (vx % 10);
+}
+
+void OpcodeFX55(chip_8_t* chip, instruction_t* inst){
+    memcpy(&chip->memory[chip->I], &chip->registers[inst->n1], inst->n1);
+}
+
+
+void OpcodeFX65(chip_8_t* chip, instruction_t* inst){
+    memcpy(&chip->registers[inst->n1], &chip->memory[chip->I], inst->n1);
 }
