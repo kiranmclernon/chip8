@@ -15,7 +15,7 @@ display_t init_display(uint8_t* buffer, size_t buffer_len, uint8_t* open){
     display.open = open;
     display.background = black;
     display.color = white;
-    memset(display.keypad, 0 , CHIP8_KEY_COUNT);
+    display.keypad = 0;
     memset(buffer, 0, buffer_len);
     SDL_Window *window;
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {

@@ -148,6 +148,14 @@ op decode_instruction(instruction_t inst){
 void Opcode0NNN(chip_8_t* chip, instruction_t* inst){}
 
 void Opcode00EE(chip_8_t* chip, instruction_t* inst){
+    if(chip->sp > 0){
+        chip->sp--;
+        chip->pc = chip->stack[chip->sp];
+    }
+
+}
+
+void Opcode00E0(chip_8_t* chip, instruction_t* inst){
     memset(chip->display.buffer, 0, BUFFER_LEN);
 }
 
@@ -158,8 +166,8 @@ void Opcode1NNN(chip_8_t* chip, instruction_t* inst){
 
 void Opcode2NNN(chip_8_t* chip, instruction_t* inst){ 
     uint16_t mem_addr = inst->instruction & ((1 << 11) - 1);
-    chip->stack[chip->pc] = chip->pc;
-    chip->pc++;
+    chip->stack[chip->sp] = chip->pc;
+    chip->sp++;
     chip->pc = mem_addr;
 }
 
@@ -350,4 +358,8 @@ void OpcodeFX55(chip_8_t* chip, instruction_t* inst){
 
 void OpcodeFX65(chip_8_t* chip, instruction_t* inst){
     memcpy(&chip->registers[inst->n1], &chip->memory[chip->I], inst->n1);
+}
+
+void Opcode0000(chip_8_t* chip, instruction_t* inst){
+    printf("FUCK YOU");
 }
