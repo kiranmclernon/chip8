@@ -11,7 +11,6 @@ OBJECTS:= $(patsubst ${SRCDIR}/%.c, ${BUILDDIR}/%.o, ${SOURCES})
 DEPFILES:= $(patsubst ${BUILDDIR}/%.o, ${DEPDIR}/%.d, ${OBJECTS})
 EXECUTABLE:=main
 
-
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 LIBS:= -I${LIBDIR}
 SDL_CFLAGS := $(shell pkg-config --cflags sdl2)
@@ -25,7 +24,6 @@ TEST_BUILD_DIR := ${BUILDDIR}/tests
 TEST_BINARY_DIR := ${TEST_BUILD_DIR}/bin
 TEST_DEP_DIR := ${TEST_BUILD_DIR}/deps
 
-
 TEST_SOURCES:= $(wildcard ${TEST_SRC_DIR}/*.c)
 TEST_OBJECTS:= $(patsubst ${TEST_SRC_DIR}/%.c, ${TEST_BUILD_DIR}/%.o, ${TEST_SOURCES})
 TEST_DEPFILES:= $(patsubst ${TEST_BUILD_DIR}/%.o, ${TEST_DEP_DIR}/%.d, ${TEST_OBJECTS})
@@ -33,9 +31,7 @@ TEST_CASES := $(patsubst ${TEST_BUILD_DIR}/%.o, ${TEST_BINARY_DIR}/%, ${TEST_OBJ
 
 TEST_LIBS := -I${TEST_LIB_DIR} -I${LIBDIR}
 
-
 all : $(EXECUTABLE) tests
-
 
 $(EXECUTABLE) : $(OBJECTS)
 	@echo "Linking..."
@@ -63,7 +59,6 @@ ${TEST_BINARY_DIR}/% : $(TEST_BUILD_DIR)/%.o $(OBJECTS) | $(TEST_BINARY_DIR)
 ${TEST_BUILD_DIR}/%.o : ${TEST_SRC_DIR}/%.c $(TEST_DEP_DIR)/%.d | $(TEST_DEP_DIR) $(TEST_BUILD_DIR)
 	@echo "Building $*"
 	${CC} ${CFLAGS} ${DEPFLAGS} ${TEST_LIBS} ${SDL_CFLAGS}  -c -o $@ $<
-
 
 $(TEST_BUILD_DIR): ; @mkdir -p $@
 
