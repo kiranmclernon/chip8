@@ -9,10 +9,9 @@ void set_sdl_render_draw_color(SDL_Renderer* renderer, color_t* color){
     SDL_SetRenderDrawColor(renderer, color->r, color->g, color->b, color->a);
 }
 
-display_t init_display(uint8_t* buffer, size_t buffer_len, uint8_t* open){
+display_t init_display(uint8_t* buffer, size_t buffer_len){
     display_t display;
     display.buffer = buffer;
-    display.open = open;
     display.background = black;
     display.color = white;
     display.keypad = 0;
@@ -40,7 +39,7 @@ display_t init_display(uint8_t* buffer, size_t buffer_len, uint8_t* open){
     SDL_Renderer *renderer;
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    
+
     if (renderer == NULL) {
         printf("Renderer creation failed: %s\n", SDL_GetError());
         SDL_DestroyWindow(window);
@@ -53,11 +52,15 @@ display_t init_display(uint8_t* buffer, size_t buffer_len, uint8_t* open){
 
 
 uint8_t get_key(display_t* display, uint8_t key){
-    return display->keypad & ((1 << (15 - key)) - 1);
+    return (display->keypad & (1 << key)) >> key;
 }
 
 void set_key(display_t* display, uint8_t key, uint8_t n){
-    set_nth_bit((uint8_t*)display->buffer, key, n);
+    if(n){
+        display->keypad |= (1 << key);
+    } else {
+        display->keypad &= ~(1 << key);
+    }
 }
 
 void render(display_t* display){

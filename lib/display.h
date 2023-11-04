@@ -25,13 +25,12 @@ typedef struct{
     uint8_t* buffer;
     color_t color;
     color_t background;
-    uint8_t* open;
     uint16_t keypad;
 } display_t;
 
 void set_sdl_render_draw_color(SDL_Renderer* renderer, color_t* color);
 
-display_t init_display(uint8_t* buffer, size_t buffer_len, uint8_t* open);
+display_t init_display(uint8_t* buffer, size_t buffer_len);
 
 uint8_t get_key(display_t* display, uint8_t key);
 

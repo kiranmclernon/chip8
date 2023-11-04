@@ -1,6 +1,6 @@
 CC:=gcc
-CFLAGS:= -Wall
-
+CFLAGS:= -Wall -fprofile-arcs -ftest-coverage
+PROJECT_ROOT := $(shell pwd)
 LIBDIR := lib
 SRCDIR := src
 BUILDDIR := build
@@ -23,19 +23,25 @@ TEST_LIB_DIR := ${TEST_DIR}/lib
 TEST_BUILD_DIR := ${BUILDDIR}/tests
 TEST_BINARY_DIR := ${TEST_BUILD_DIR}/bin
 TEST_DEP_DIR := ${TEST_BUILD_DIR}/deps
-
 TEST_SOURCES:= $(wildcard ${TEST_SRC_DIR}/*.c)
 TEST_OBJECTS:= $(patsubst ${TEST_SRC_DIR}/%.c, ${TEST_BUILD_DIR}/%.o, ${TEST_SOURCES})
+OBJECTS_FOR_TEST:= $(filter-out ${BUILDDIR}/${EXECUTABLE}.o, ${OBJECTS})
 TEST_DEPFILES:= $(patsubst ${TEST_BUILD_DIR}/%.o, ${TEST_DEP_DIR}/%.d, ${TEST_OBJECTS})
 TEST_CASES := $(patsubst ${TEST_BUILD_DIR}/%.o, ${TEST_BINARY_DIR}/%, ${TEST_OBJECTS})
 
 TEST_LIBS := -I${TEST_LIB_DIR} -I${LIBDIR}
+TEST_DEPFLAGS = -MT $@ -MMD -MP -MF $(TEST_DEP_DIR)/$*.d
+COVERAGE_DATA := $(BUILDDIR)/coverage_data
+COVERAGE_REPORT_DIR:= $(COVERAGE_DATA)/coverage_report
 
-all : $(EXECUTABLE) tests
+all : $(EXECUTABLE) test
+
+run : $(EXECUTABLE)
+	./$(EXECUTABLE)
 
 $(EXECUTABLE) : $(OBJECTS)
 	@echo "Linking..."
-	$(CC) $(SDL_LDFLAGS) $(LDLIBS) -o $@ $^
+	$(CC) $(CFLAGS) $(SDL_LDFLAGS) $(LDLIBS) -o $@ $^
 	@echo "Linking for target $(EXECUTABLE) succeeded!"
 
 $(BUILDDIR)/%.o : $(SRCDIR)/%.c $(DEPDIR)/%.d | $(DEPDIR) $(BUILDDIR)
@@ -51,14 +57,41 @@ $(DEPFILES):
 
 include $(wildcard $(DEPFILES))
 
-tests : ${TEST_CASES}
 
-${TEST_BINARY_DIR}/% : $(TEST_BUILD_DIR)/%.o $(OBJECTS) | $(TEST_BINARY_DIR)
-	${CC} ${LDLIBS} ${SDL_LDFLAGS} -o $@ $^
+test : clean_coverage_data $(TEST_CASES)
+	@echo "Running all test cases"
+	@for test_case in $(TEST_CASES); do \
+		$$test_case; \
+	done
+	@echo "All test cases passed"
+
+
+${TEST_BINARY_DIR}/% : $(TEST_BUILD_DIR)/%.o $(OBJECTS_FOR_TEST) | $(TEST_BINARY_DIR)
+	${CC} ${LDLIBS} ${CFLAGS} ${SDL_LDFLAGS} -o $@ $^
 
 ${TEST_BUILD_DIR}/%.o : ${TEST_SRC_DIR}/%.c $(TEST_DEP_DIR)/%.d | $(TEST_DEP_DIR) $(TEST_BUILD_DIR)
 	@echo "Building $*"
-	${CC} ${CFLAGS} ${DEPFLAGS} ${TEST_LIBS} ${SDL_CFLAGS}  -c -o $@ $<
+	${CC} ${CFLAGS} ${TEST_DEPFLAGS} ${TEST_LIBS} ${SDL_CFLAGS}  -c -o $@ $<
+
+run_tests: test | $(COVERAGE_DATA) 
+	@GCOV_PREFIX_STRIP=1 GCOV_PREFIX=${BUILDDIR} gcov $(OBJECTS_FOR_TEST)
+	@find . -type d -name $(BUILDDIR) -prune -o -type f -name "*.gcov" -exec mv {} $(COVERAGE_DATA) \;
+
+coverage: run_tests | $(COVERAGE_REPORT_DIR)
+	@echo "Generating code coverage report..."
+	gcovr -r . --html --html-details -o $(COVERAGE_REPORT_DIR)/coverage.html
+	@echo "Code coverage report generated"
+
+coverage_report: coverage
+	open $(COVERAGE_REPORT_DIR)/coverage.html
+
+clean_coverage_data: $(BUILDDIR)
+	@rm -rf $(COVERAGE_DATA)
+	@find $(BUILDDIR) -type f -name "*.gcda" -exec rm {} \;
+
+$(COVERAGE_DATA): ; @mkdir -p $@
+
+$(COVERAGE_REPORT_DIR): ; @mkdir -p $@
 
 $(TEST_BUILD_DIR): ; @mkdir -p $@
 
@@ -89,6 +122,6 @@ print-testobjs:
 print-testdepfiles:
 	@echo "test depfiles $(TEST_DEPFILES)"
 
-.PHONY: clean
+.PHONY: all test run_tests coverage clean clean_coverage_data
 clean:
 	rm -rf $(BUILDDIR) $(EXECUTABLE)
