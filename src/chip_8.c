@@ -186,8 +186,8 @@ void Opcode0NNN(chip_8_t* chip, instruction_t* inst){}
 
 void Opcode00EE(chip_8_t* chip, instruction_t* inst){
     if(chip->sp > 0){
-        chip->pc = chip->stack[chip->sp];
         chip->sp--;
+        chip->pc = chip->stack[chip->sp];
     }
 
 }
@@ -203,8 +203,8 @@ void Opcode1NNN(chip_8_t* chip, instruction_t* inst){
 
 void Opcode2NNN(chip_8_t* chip, instruction_t* inst){ 
     uint16_t mem_addr = inst->instruction & ((1 << 11) - 1);
-    chip->sp++;
     chip->stack[chip->sp] = chip->pc;
+    chip->sp++;
     chip->pc = mem_addr;
 }
 
@@ -227,7 +227,7 @@ void Opcode4XKK(chip_8_t* chip, instruction_t* inst){
 void Opcode5XY0(chip_8_t* chip, instruction_t* inst){ 
     uint8_t Vx = chip->registers[inst->n1];
     uint8_t Vy = chip->registers[inst->n2];
-    if(Vx != Vy){
+    if(Vx == Vy){
         chip->pc += 2;
     }
 }
@@ -335,8 +335,9 @@ void OpcodeDXYN(chip_8_t* chip, instruction_t* inst){
         sprite=chip->memory[sprite_addr + i];
         row = y_start + i;
         uint8_t existing = get_byte_row_col(chip->display_buffer, row, x);
-        *chip->Vf |= (sprite & existing) != 0;
-        set_byte_row_col(chip->display_buffer, row, x, sprite);
+        uint8_t xored = sprite ^= existing;
+        *chip->Vf |= (xored & existing) != 0;
+        set_byte_row_col(chip->display_buffer, row, x, xored);
     }
 }
 
@@ -388,7 +389,7 @@ void OpcodeFX33(chip_8_t* chip, instruction_t* inst){
 }
 
 void OpcodeFX55(chip_8_t* chip, instruction_t* inst){
-    memcpy(&chip->memory[chip->I], chip->registers, inst->n1);
+    memcpy(&(chip->memory[chip->I]), chip->registers, inst->n1);
 }
 
 

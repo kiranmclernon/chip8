@@ -57,7 +57,7 @@ void test_Opcode2NNN(){
     decode_instruction(inst)(&chip, &inst);
     assert(chip.pc == 0x511);
     assert(chip.sp = sp + 1);
-    assert(chip.stack[chip.sp] == pc);
+    assert(chip.stack[sp] == pc);
     destroy_chip8(&chip);
 }
 void test_Opcode3XKK(){
@@ -97,12 +97,14 @@ void test_Opcode5XY0(){
     uint8_t pc = chip.pc;
     instruction_t inst = fetch(&chip);
     decode_instruction(inst)(&chip, &inst);
-    assert(chip.pc == pc+4);
+    assert(chip.pc == pc+2);
     chip = get_test_chip(0x5120);
+    chip.registers[1] = 2;
+    chip.registers[2] = 2;
     pc = chip.pc;
     inst = fetch(&chip);
     decode_instruction(inst)(&chip, &inst);
-    assert(chip.pc == pc+2);
+    assert(chip.pc == pc+4);
     destroy_chip8(&chip);
 }
 
@@ -494,6 +496,8 @@ void test_OpcodeFX33(){
     destroy_chip8(&chip);
 }
 
+//Store registers V0 through Vx in memory starting at location I.
+//The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
 void test_OpcodeFX55(){
     chip_8_t chip = get_test_chip(0xF655);
     uint8_t random_numbers[6];
